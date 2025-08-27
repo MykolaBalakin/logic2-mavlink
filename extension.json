@@ -1,0 +1,13 @@
+{
+  "name": "MAVLink",
+  "apiVersion": "1.0.0",
+  "author": "Mykola Balakin",
+  "version": "0.0.1",
+  "description": "",
+  "extensions": {
+    "MAVLink": {
+      "type": "HighLevelAnalyzer",
+      "entryPoint": "analyzer.MAVLinkAnalyzer"
+    }
+  }
+}
