@@ -1,19 +1,35 @@
 import json
 from typing import Dict, List, Optional, Union
-from mavlink_definitions import MAVLinkDefinitions, MAVLinkMessage
+from mavlink_definitions import (
+    MAVLinkDefinitions,
+    MAVLinkMessage,
+    get_all_mavlink_definitions,
+)
 from mavlink_parser import MAVLink2Packet, MAVLink2Parser, ParseResult
-from saleae.analyzers import HighLevelAnalyzer, AnalyzerFrame
+from saleae.analyzers import HighLevelAnalyzer, AnalyzerFrame, ChoicesSetting
 
 MAVLINK_PACKET_TYPE = "MAVLink"
 MAVLINK_PACKET_FORMAT = "{{data.message}}"
 
 
+mavlink_definitions = sorted(get_all_mavlink_definitions())
+NONE_SETTING = "<None>"
+
+
 class MAVLinkAnalyzer(HighLevelAnalyzer):
+    definitions_setting = ChoicesSetting(
+        label="Definitions File", choices=[NONE_SETTING] + mavlink_definitions
+    )
+    result_types: Dict[str, Dict[str, str]] = {
+        MAVLINK_PACKET_TYPE: {"format": MAVLINK_PACKET_FORMAT}
+    }
+
     def __init__(self):
-        self.result_types: Dict[str, Dict[str, str]] = {
-            MAVLINK_PACKET_TYPE: {"format": MAVLINK_PACKET_FORMAT}
-        }
-        self.definitions = MAVLinkDefinitions()
+        self.definitions = (
+            None
+            if str(self.definitions_setting) == NONE_SETTING
+            else MAVLinkDefinitions(str(self.definitions_setting))
+        )
         self.parser = MAVLink2Parser(self.definitions)
         self.packet_start = None
 
@@ -52,7 +68,11 @@ class MAVLinkAnalyzer(HighLevelAnalyzer):
     def _generate_frame(
         self, packet: MAVLink2Packet, start_time, end_time  # type: ignore
     ) -> AnalyzerFrame:
-        message = self.definitions.get_message(packet.message_id)
+        message = (
+            None
+            if self.definitions is None
+            else self.definitions.get_message(packet.message_id)
+        )
         data = self._packet_to_data(packet, message)
 
         format = MAVLINK_PACKET_TYPE
